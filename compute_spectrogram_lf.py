@@ -21,9 +21,9 @@ import gwpy
 from datetime import timedelta
 
 node = 'Central_Caldera'
-num_hours = 500
+num_hours = 8760
 
-start_time_first = datetime.datetime(2017,3,10,0,0,0)
+start_time_first = datetime.datetime(2017,1,1,0,0,0)
 
 kstart = 0
 for k in range(kstart,num_hours):
@@ -41,6 +41,6 @@ for k in range(kstart,num_hours):
     print('   Writing to File...')
 
     # Write to Pickle File
-    filename = f"Central_Caldera/spectrogram{k:03}.pkl"
+    filename = f"Spectrograms/Central_Caldera_2017/spectrogram{k:03}.pkl"
     with open(filename,'wb') as f:
         pickle.dump(spec, f)

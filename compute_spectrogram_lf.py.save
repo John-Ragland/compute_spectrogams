@@ -20,11 +20,10 @@ import gwpy
 
 from datetime import timedelta
 
+node = 'Central_Cadldera'
+num_hours = 500
 
-node = '/PC01A'
-num_hours = 5
-
-start_time_first = datetime.datetime(2017,7,13,23,0,0)
+start_time_first = datetime.datetime(2017,3,10,0,0,0)
 
 kstart = 0
 for k in range(kstart,num_hours):
@@ -32,13 +31,9 @@ for k in range(kstart,num_hours):
     end_time = start_time_first + timedelta(hours=k+1)
     print(f'Computing Spectrogram for {start_time} - {end_time}: {k}')
     print('   Downloading Data...')
-
-    # Units are Pa
-    hdata = hydrophone_request.get_acoustic_data(start_time, end_time, node)
-
+    hdata = hydrophone_request.get_acoustic_data_LF(start_time, end_time, node)
     print('   Computing Spectrogram...')
     try:
-        # Units of Spectrogram are (dB rel uPa)^2/Hz
         spec = hdata.compute_spectrogram(avg_time=60)
     except:
         print('   No Data for time segment')
@@ -46,6 +41,6 @@ for k in range(kstart,num_hours):
     print('   Writing to File...')
 
     # Write to Pickle File
-    filename = f"spectrogram{k:03}.pkl"
+    filename = f"Eastern_Caldera/spectrogram{k:03}.pkl"
     with open(filename,'wb') as f:
         pickle.dump(spec, f)
