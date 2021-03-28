@@ -44,6 +44,7 @@ def merge(spec_start, spec_end, spec_dir):
     bar.start()
 
     time = []
+
     for k in range(spec_start,spec_end):
         # Read specific spectrogram file
         file_path = file_path = spec_dir + f"/spectrogram{k:03}.pkl"
@@ -75,6 +76,7 @@ def merge(spec_start, spec_end, spec_dir):
                     time.append(time_UTC[n])
                 else:
                     time.append(time_UTC[n].datetime)
+
         try:
             values
             times
@@ -86,29 +88,47 @@ def merge(spec_start, spec_end, spec_dir):
             times = np.hstack((times,np.asarray(time)))
         bar.update(k- spec_start)
 
+    try:
+        values
+        times
+        freq
+    except NameError:
+        values = np.empty((1,2049,))
+        values[:] = np.nan
+        freq = np.empty(2049)
+        freq[:] = np.nan
+        times = np.nan
 
     return times, freq, values
 
-def monthly_specs(spec_dir):
-    if spec_dir[-4:] == '2016':
+def monthly_specs(spec_dir, imag_dir, node):
+    
+    year = int(spec_dir[-4:])
+
+    if year % 4 == 0:
         leap = True
     else:
         leap = False
 
     months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     hr_idx = get_hour_index(leap)
+    
     for k in range(12):
-        print(f'Merging Spectrograms for {months[k]}, {spec_dir[-20:-5]}, {spec_dir[-4:]}...')
-        tm.sleep(0.5)
+        print(f'Merging {node} Spectrograms for {months[k]}, {str(year)}...')
+
+        image_path = imag_dir + months[k] + '_'  + str(year) + '.png'
+        tm.sleep(0.2)
         times, freq, values = merge(hr_idx[k],hr_idx[k+1],spec_dir)
 
-        # Create Spectrogram Object
-        spec_full = basic.Spectrogram(times, freq, values)
-        image_path = 'monthly_figures' + spec_dir[-21:] + '/' + months[k] + '.png'
-    
-        ooipy.tools.ooiplotlib.plot_spectrogram(
-            spec_full, xlabel_rot=30,res_reduction_time=50, fmax=100,
-            filename=image_path,save=True, dpi=300)
+        try:
+            # Create Spectrogram Object
+            spec_full = basic.Spectrogram(times, freq, values)
+        
+            ooipy.tools.ooiplotlib.plot_spectrogram(
+                spec_full, xlabel_rot=30,res_reduction_time=100, fmax=100, vmax = 80, vmin = 20,
+                filename=image_path, save=True, plot=False)
+        except:
+            continue
     return
 
 def create_all_specs():
