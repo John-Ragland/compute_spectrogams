@@ -1,8 +1,6 @@
 import os
 import sys
-cwd = os.getcwd()
-ooipy_dir = os.path.dirname(cwd) + '/ooipy'
-sys.path.append(ooipy_dir)
+
 from matplotlib import pyplot as plt
 import datetime
 import numpy as np
@@ -38,10 +36,33 @@ def get_hour_index(leap=False):
 
     return hr_idx
     
-def merge(spec_start, spec_end, spec_dir):
-    bar = progressbar.ProgressBar(maxval=spec_end-spec_start, \
-        widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
-    bar.start()
+def merge(spec_start, spec_end, spec_dir, verbose=True):
+    '''
+    merge seperate spectrogram files to single spectrogram instance
+    Parameters
+    ----------
+    spec_start : int
+        index of spec start file
+    spec_end : int
+        index of spec end file
+    spec_dir : str
+        full path where spectrograms are located
+    verbose : bool
+        whether to print updates or not
+    '''
+    # TODO this is still broken
+    # set spec_end to largest possible if input is larger than possible
+    if (int(spec_dir[-5:-1]) % 4 == 0) & (spec_end >= 8784):
+        spec_end = 8783
+        #print('invalid spec_end')
+    elif (int(spec_dir[-5:-1]) % 4 != 0) & (spec_end >= 8760):
+        spec_end = 8759
+        #print('invalid spec_end')
+        
+    if verbose:
+        bar = progressbar.ProgressBar(maxval=spec_end-spec_start, \
+            widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar.start()
 
     time = []
 
@@ -55,8 +76,6 @@ def merge(spec_start, spec_end, spec_dir):
         except:
             continue
         time_UTC = spec.time
-
-
 
         # Check if freq variable exist
         try:
@@ -86,7 +105,7 @@ def merge(spec_start, spec_end, spec_dir):
         else:
             values = np.vstack((values,spec.values))
             times = np.hstack((times,np.asarray(time)))
-        bar.update(k- spec_start)
+        if verbose: bar.update(k- spec_start)
 
     try:
         values
@@ -185,3 +204,66 @@ def single_month(spec_dir, month):
     ooipy.tools.ooiplotlib.plot_spectrogram(
     spec_full, xlabel_rot=30,res_reduction_time=50, fmax=100,
     filename=image_path,save=True, dpi=300)
+
+def downsample_for_figure(hydrophone, avg_len = 12):
+    '''
+    takes spectrogram for hydrophone and averages in 12 hour increments so that
+    6 year long figure can be created. Spectrogram file is saved in hydrophone
+    file directory
+    
+    Parameters
+    ----------
+    hydrophone : str
+        'Axial_Base', 'Central_Caldera', 'Eastern_Caldera', 'Slope_Base',
+        and 'Southern_Hydrate' are acceptable inputs. Specificies hydrophone
+    avg_len : float
+        length of average period in hours
+
+    Returns
+    -------
+    spec : ooipy.hydrophone.basic.Spectrogram
+        spectrogram data object
+    '''
+    # Check that hydrophone is valid
+    hydrophones = ['Axial_Base', 'Central_Caldera', 'Eastern_Caldera', 'Slope_Base', 'Southern_Hydrate']
+    if hydrophone not in hydrophones:
+        raise Exception('invalid hydrophone string')
+
+    spec_values = []
+    spec_times = []
+
+    years = [2015, 2016, 2017, 2018, 2019, 2020]
+    for year in years:
+        print('', end='\r')
+        print(f'    Averaging {year}...')
+        spec_dir = f'/Volumes/Ocean_Acoustics/Spectrograms/{hydrophone}/{year}/'
+        
+        if year % 4 == 0:
+            end_idx = 8782
+        else:
+            end_idx = 8758
+        
+        for k in range(0,end_idx,avg_len):
+            print(f'        {k/end_idx*100:0.04} %', end='\r')
+            start = k
+            end = k + avg_len-1
+            time, freq, values = merge(start, end, spec_dir, verbose=False)
+
+            try:
+                spec_values.append(np.mean(values,axis=0))
+                spec_times.append(time[0])
+            except:
+                spec_values.append(np.mean(values, axis=0))
+                spec_times.append(np.nan)
+        
+    spec_values_np = np.array(spec_values)
+    spec_times_np = np.array(spec_times)
+
+    spec = ooipy.hydrophone.basic.Spectrogram(spec_times_np, freq, spec_values_np)
+
+    filename = f'/Volumes/Ocean_Acoustics/Spectrograms/{hydrophone}/6_year_spectrogram.pkl'
+    
+    with open(filename, 'wb') as f:
+        pickle.dump(spec, f)
+
+    return spec
