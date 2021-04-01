@@ -25,7 +25,7 @@ from scipy import signal
 import progressbar
 import time as tm
 
-def get_hour_index(leap=False):
+def get_hour_index_array(leap=False):
     if leap:
         hours_in_month = np.array([0, 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31])*24
     else:
@@ -35,7 +35,7 @@ def get_hour_index(leap=False):
         hr_idx.append(sum(hours_in_month[:k+1]))
 
     return hr_idx
-    
+
 def merge(spec_start, spec_end, spec_dir, verbose=True):
     '''
     merge seperate spectrogram files to single spectrogram instance
@@ -50,6 +50,10 @@ def merge(spec_start, spec_end, spec_dir, verbose=True):
     verbose : bool
         whether to print updates or not
     '''
+    # add slash to end of spec_dir if it doesn't exit
+    if spec_dir[-1] != '/':
+        spec_dir += '/'
+
     # TODO this is still broken
     # set spec_end to largest possible if input is larger than possible
     if (int(spec_dir[-5:-1]) % 4 == 0) & (spec_end >= 8784):
@@ -130,7 +134,7 @@ def monthly_specs(spec_dir, imag_dir, node):
         leap = False
 
     months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
-    hr_idx = get_hour_index(leap)
+    hr_idx = get_hour_index_array(leap)
     
     for k in range(12):
         print(f'Merging {node} Spectrograms for {months[k]}, {str(year)}...')
@@ -189,7 +193,7 @@ def yearlong_specs():
 
 def single_month(spec_dir, month):
     k = month -1
-    hr_idx = get_hour_index(leap=False)
+    hr_idx = get_hour_index_array(leap=False)
     months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
     print(f'Merging Spectrograms for {months[k]}, {spec_dir[-20:-5]}, {spec_dir[-4:]}...')
     tm.sleep(0.5)
@@ -267,3 +271,36 @@ def downsample_for_figure(hydrophone, avg_len = 12):
         pickle.dump(spec, f)
 
     return spec
+
+def monthly_psds(years, months, nodes):
+    '''
+    calculate and plot average psds for each month
+    '''
+    
+    for node in nodes:
+        for year in years:
+            for month in months:
+                psd_dir = f'/Volumes/Ocean_Acoustics/Spectrograms/{node}/psds/'
+                print(f'Merging for {node}, {year}-{month}...\n')
+
+                month_hours = get_hour_index_array(year%4==0)
+                spec_start, spec_end = month_hours[month-1], month_hours[month]
+                spec_dir = f'/Volumes/Ocean_Acoustics/Spectrograms/{node}/{year}/'
+                
+
+                _, freq, values = merge(spec_start, spec_end, spec_dir)
+
+                PSD = np.mean(values, axis=0)
+
+                fig = plt.figure(figsize=(7,5))
+                plt.plot(freq, PSD)
+                plt.grid()
+                plt.ylabel('Power (dB)')
+                plt.xlabel('frequency (Hz)')
+                plt.grid()
+                plt.xlim([0, 100])
+            
+                im_name = f'{year}-{month}_PSD.png'
+                image_dir = psd_dir + im_name
+
+                fig.savefig(image_dir, dpi=300)
