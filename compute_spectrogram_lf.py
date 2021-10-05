@@ -1,9 +1,9 @@
 import os
 import sys
 
-cwd = os.getcwd()
-ooipy_dir = os.path.dirname(cwd) + '/ooipy'
-sys.path.append(ooipy_dir)
+#cwd = os.getcwd()
+#ooipy_dir = os.path.dirname(cwd) + '/ooipy'
+#sys.path.append(ooipy_dir)
 
 from matplotlib import pyplot as plt
 import datetime
@@ -25,7 +25,7 @@ from datetime import timedelta
 nodes = ['Central_Caldera','Eastern_Caldera']
 years = [2015, 2016, 2017, 2018, 2019, 2020]
 
-kstart=5149
+kstart=0
 
 for node_count, node in enumerate(nodes):
     for year_count, year in enumerate(years):
