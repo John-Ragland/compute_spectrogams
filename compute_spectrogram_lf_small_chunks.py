@@ -22,13 +22,11 @@ import gwpy
 
 from datetime import timedelta
 
-nodes = ['Central_Caldera','Eastern_Caldera']
+nodes = ['Axial_Base', 'Slope_Base', 'Southern_Hydrate']
 years = [2015, 2016, 2017, 2018, 2019, 2020]
 
-kstart=5149
-
-for node_count, node in enumerate(nodes):
-    for year_count, year in enumerate(years):
+for node in nodes:
+    for year in years:
         start_time_first = datetime.datetime(year,1,1,0,0,0)
         
         # set num of hours in year depending on leap
@@ -37,11 +35,8 @@ for node_count, node in enumerate(nodes):
         else:
             num_hours = 8760
 
-        if (node_count == 0) & (year_count==0):
-            start_index = kstart
-        else:
-            start_index = 0
-        for k in range(start_index,num_hours):
+        kstart = 0
+        for k in range(kstart,num_hours):
             start_time = start_time_first + timedelta(hours=k)
             end_time = start_time_first + timedelta(hours=k+1)
             print(f'Computing Spectrogram for {node} | {start_time} - {end_time}: {k}')
@@ -49,14 +44,19 @@ for node_count, node in enumerate(nodes):
             hdata = hydrophone_request.get_acoustic_data_LF(start_time, end_time, node)
             print('   Computing Spectrogram...')
             try:
-                # 60 second average PSD
-                spec = hdata.compute_spectrogram(avg_time=60, average_type='mean')
+                spec = hdata.compute_spectrogram(avg_time=60)
             except:
                 print('   No Data for time segment')
                 spec = None
             print('   Writing to File...')
 
             # Write to Pickle File
-            filename = "/Volumes/Ocean_Acoustics/Spectrograms/0_MeanAveraging/" +node+ "/" + str(year) +f"/spectrogram{k:03}.pkl"
+            filename = "/Volumes/Ocean_Acoustics/Spectrograms/" +node+ "/" + str(year) +f"/spectrogram{k:03}.pkl"
             with open(filename,'wb') as f:
                 pickle.dump(spec, f)
+
+                
+node = 'Eastern Caldera'
+
+start_time = datetime.datetime(2016,6,1)
+end_time = datetime.datetime(2016,8,1)
