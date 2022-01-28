@@ -6,27 +6,19 @@ import datetime
 import numpy as np
 from obspy import read,Stream, Trace
 from obspy.core import UTCDateTime
-
 from obspy import read
 import pickle
 import scipy
-from gwpy.timeseries import TimeSeries
 import seaborn as sns
-
 import ooipy
 from ooipy.request import hydrophone_request
 from ooipy.hydrophone import basic
-import gwpy
-
 import plotly.express as px
 import progressbar
 from scipy import signal
-
 import progressbar
 import time as tm
-
 from tqdm import tqdm
-
 import pandas as pd
 
 def get_hour_index_array(leap=False):
@@ -53,6 +45,15 @@ def merge(spec_start, spec_end, spec_dir, verbose=True):
         full path where spectrograms are located
     verbose : bool
         whether to print updates or not
+        
+    Returns
+    -------
+    times : np.array
+        datetime.datetime times
+    freq : np.array
+        frequency vector
+    values : np.array
+        spectogram values
     '''
     # add slash to end of spec_dir if it doesn't exit
     if spec_dir[-1] != '/':
@@ -123,6 +124,50 @@ def merge(spec_start, spec_end, spec_dir, verbose=True):
 
     return times, freq, values
 
+def merge_ts(spec_start, spec_end, spec_dir, verbose=True):
+    '''
+    merge_ts - quick wrapper for merge, where the spec_start and spec_end 
+        are given in pd.Timestamp instead of integer year hours
+        
+    currently only works for single year use
+    TODO add support for data across calander years
+    
+    Parameters
+    ----------
+    spec_start : pd.Timestamp
+        start_time of spectrogram
+    spec_end : pd.Timestamp
+        end_time of spectrogram
+    spec_dir : str
+        directory of spectrogram structure
+    verbose : bool
+        you know what it does
+        
+    Returns
+    -------
+    times : np.array
+        datetime.datetime times
+    freq : np.array
+        frequency vector
+    values : np.array
+        spectogram values
+    '''
+    # add slash to end of spec_dir if it doesn't exit
+    if spec_dir[-1] != '/':
+        spec_dir += '/'
+    
+    # get year from spectrogram directory
+    year = spec_dir[-5:-1]
+    time_base = pd.Timestamp(f'{year}-01-01 00:00:00')
+    
+    td_start = (spec_start - time_base)
+    start_idx = int(td_start.days * 24 + td_start.seconds/3600)
+    td_end = (spec_end - time_base)
+    end_idx = int(td_end.days*24 + td_end.seconds/3600)
+    
+    return merge(start_idx, end_idx, spec_dir, verbose)
+    
+    
 def monthly_specs(spec_dir, imag_dir, node):
     
     year = int(spec_dir[-4:])

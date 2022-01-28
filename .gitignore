@@ -3,3 +3,5 @@
 *.json
 *.DS_Store
 *.mat
+*.ipynb_checkpoints/
+*.DS_Store

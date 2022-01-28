@@ -22,8 +22,8 @@ import gwpy
 
 from datetime import timedelta
 
-nodes = ['Central_Caldera','Eastern_Caldera']
-years = [2015, 2016, 2017, 2018, 2019, 2020]
+nodes = ['Eastern_Caldera']
+years = [2017]
 
 kstart=0
 
@@ -46,17 +46,17 @@ for node_count, node in enumerate(nodes):
             end_time = start_time_first + timedelta(hours=k+1)
             print(f'Computing Spectrogram for {node} | {start_time} - {end_time}: {k}')
             print('   Downloading Data...')
-            hdata = hydrophone_request.get_acoustic_data_LF(start_time, end_time, node)
+            hdata = hydrophone_request.get_acoustic_data_LF(start_time, end_time, node, channel='HNZ')
             print('   Computing Spectrogram...')
             try:
-                # 60 second average PSD
-                spec = hdata.compute_spectrogram(avg_time=60, average_type='mean')
+                # 15 minute average PSD
+                spec = hdata.compute_spectrogram(avg_time=900, L=512, average_type='mean')
             except:
                 print('   No Data for time segment')
                 spec = None
             print('   Writing to File...')
 
             # Write to Pickle File
-            filename = "/Volumes/Ocean_Acoustics/Spectrograms/0_MeanAveraging/" +node+ "/" + str(year) +f"/spectrogram{k:03}.pkl"
+            filename = "/Volumes/Ocean_Acoustics/Spectrograms/seismometers/" +node+ "/" + str(year) +f"/spectrogram{k:03}.pkl"
             with open(filename,'wb') as f:
                 pickle.dump(spec, f)
